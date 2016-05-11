@@ -39,9 +39,8 @@ type (
 	}
 
 	LocalNameListStatement struct {
-		NameList  SyntaxTree
-		ExpList   SyntaxTree
-		NameCount int
+		NameList SyntaxTree
+		ExpList  SyntaxTree
 	}
 
 	AssignmentStatement struct {
