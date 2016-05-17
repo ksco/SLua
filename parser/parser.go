@@ -25,6 +25,11 @@ func (p *Parser) Parse() syntax.SyntaxTree {
 	return p.parseChunk()
 }
 
+const (
+	prefixExpTypeNormal = iota
+	prefixExpTypeVar
+)
+
 func (p *Parser) nextToken() *scanner.Token {
 	if p.lookAheadToken.Category != scanner.TokenEOF {
 		p.currentToken = p.lookAheadToken.Clone()
@@ -264,7 +269,14 @@ func (p *Parser) parseExpList() syntax.SyntaxTree {
 }
 
 func (p *Parser) parseOtherStatement() syntax.SyntaxTree {
-	exp := p.parsePrefixExp()
+	exp, expType := p.parsePrefixExp()
+	if expType != prefixExpTypeVar {
+		panic(&Error{
+			module: p.module,
+			token:  p.currentToken,
+			str:    "expect var here",
+		})
+	}
 	varList := &syntax.VarList{}
 	varList.VarList = append(varList.VarList, exp)
 	for p.lookAhead().Category != scanner.TokenAssign {
@@ -276,7 +288,14 @@ func (p *Parser) parseOtherStatement() syntax.SyntaxTree {
 			})
 		}
 		p.nextToken()
-		exp := p.parsePrefixExp()
+		exp, expType := p.parsePrefixExp()
+		if expType != prefixExpTypeVar {
+			panic(&Error{
+				module: p.module,
+				token:  p.currentToken,
+				str:    "expect var here",
+			})
+		}
 		varList.VarList = append(varList.VarList, exp)
 	}
 	p.nextToken()
@@ -349,7 +368,7 @@ func (p *Parser) parseMainExp() syntax.SyntaxTree {
 		scanner.TokenNumber, scanner.TokenString:
 		exp = &syntax.Terminator{Token: p.nextToken().Clone()}
 	case scanner.TokenID, scanner.TokenLeftParen:
-		exp = p.parsePrefixExp()
+		exp, _ = p.parsePrefixExp()
 	default:
 		panic(&Error{
 			module: p.module,
@@ -360,7 +379,7 @@ func (p *Parser) parseMainExp() syntax.SyntaxTree {
 	return exp
 }
 
-func (p *Parser) parsePrefixExp() syntax.SyntaxTree {
+func (p *Parser) parsePrefixExp() (syntax.SyntaxTree, int) {
 	p.nextToken()
 	if p.currentToken.Category != scanner.TokenID &&
 		p.currentToken.Category != scanner.TokenLeftParen {
@@ -371,6 +390,7 @@ func (p *Parser) parsePrefixExp() syntax.SyntaxTree {
 		})
 	}
 	var exp syntax.SyntaxTree
+	var expType int
 	if p.currentToken.Category == scanner.TokenLeftParen {
 		exp = p.parseExp()
 		if p.nextToken().Category != scanner.TokenRightParen {
@@ -380,10 +400,12 @@ func (p *Parser) parsePrefixExp() syntax.SyntaxTree {
 				str:    "expect ')'",
 			})
 		}
+		expType = prefixExpTypeNormal
 	} else {
 		exp = &syntax.Terminator{Token: p.currentToken.Clone()}
+		expType = prefixExpTypeVar
 	}
-	return exp
+	return exp, expType
 }
 
 func isMainExp(token *scanner.Token) bool {
