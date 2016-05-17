@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ksco/SLua/parser"
 	"github.com/ksco/slua/scanner"
 )
 
@@ -13,13 +14,8 @@ func main() {
 			fmt.Println(err)
 		}
 	}()
-
-	r := strings.NewReader("local 你好 = 'Hello, 世界'")
+	r := strings.NewReader("local さよなら = 'Hello, 世界'")
 	s := scanner.New(r)
-
-	t := s.Scan()
-	for t.Category != scanner.TokenEOF {
-		fmt.Printf("Type:%v Value:%v\n", t.Category, t)
-		t = s.Scan()
-	}
+	p := parser.New(s)
+	p.Parse()
 }
