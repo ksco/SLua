@@ -53,7 +53,7 @@ type (
 	}
 
 	Terminator struct {
-		Tok *scanner.Token
+		Token *scanner.Token
 	}
 
 	BinaryExpression struct {
